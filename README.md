@@ -1,3 +1,4 @@
+<img width="2048" height="2732" alt="1" src="https://github.com/user-attachments/assets/af09fad9-8016-4a0c-8f61-2ca3cb1168e1" />
 # Focus Pad
 
 Focus Pad 是一款为拖延症用户设计的轻量桌面专注组件，通过可视化注意力曲线、最小专注时长和三任务管理，帮助用户降低开始门槛、进入专注状态，并自动记录任务完成情况与专注时间。
