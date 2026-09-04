@@ -1,0 +1,13 @@
+{
+  "name": "focus-pad",
+  "version": "0.1.0",
+  "description": "Floating focus companion desktop widget",
+  "main": "main.js",
+  "private": false,
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^44.2.0"
+  }
+}

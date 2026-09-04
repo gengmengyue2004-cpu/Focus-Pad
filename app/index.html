@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f6f4ee" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>FocusPad</title>
+  <link rel="manifest" href="/manifest.webmanifest" type="application/manifest+json" />
+  <link rel="apple-touch-icon" href="/icons/focuspad-192.png" />
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <main class="desktop">
+    <section class="widget" id="widget" aria-label="FocusPad 悬浮专注组件" data-state="idle" data-expanded="false" data-view="focus" data-focus-mode="task">
+      <div class="widget__handle" id="dragHandle" aria-hidden="true"></div>
+
+      <button class="widget__pin" id="modeIndicator" type="button" aria-label="当前为任务专注模式，点击切换自由专注"><span></span></button>
+
+      <header class="widget__header">
+        <div class="widget__meta">
+          <div class="widget__label">FOCUS</div>
+          <div class="widget__time" id="timeLabel" role="button" tabindex="0" aria-label="展开专注组件">30:00</div>
+        </div>
+        <div class="widget__view-switch" role="tablist" aria-label="切换视图">
+          <button class="view-switch__button is-active" id="focusViewButton" type="button" role="tab" aria-selected="true">FOCUS</button>
+          <button class="view-switch__button" id="tasksViewButton" type="button" role="tab" aria-selected="false">TASKS</button>
+        </div>
+        <button class="widget__toggle" id="expandButton" type="button" aria-expanded="false" aria-label="展开组件"><span></span></button>
+      </header>
+
+      <section class="view view--focus" id="focusView" aria-label="专注视图">
+        <button class="current-task" id="currentTaskButton" type="button" aria-label="查看当前任务">
+          <span class="current-task__eyebrow">NOW</span>
+          <span class="current-task__name" id="currentTaskName">完成课程作业</span>
+          <span class="current-task__time" id="currentTaskTime">Focus 00:00</span>
+        </button>
+        <button class="curveButton" id="curveButton" type="button" aria-label="注意力曲线与时长">
+          <svg class="curve" viewBox="0 0 240 150" role="img" aria-hidden="true">
+            <defs><filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3.5" result="blur" /><feColorMatrix in="blur" type="matrix" values="1 0 0 0 0.96 0 1 0 0 0.58 0 0 1 0 0.24 0 0 0 0.24 0" /></filter></defs>
+            <path id="trackPath" class="curve__track" d="M 24 104 C 51 40, 104 24, 120 24 C 136 24, 189 40, 216 104" />
+            <path id="fillPath" class="curve__fill" d="M 24 104 C 51 40, 104 24, 120 24 C 136 24, 189 40, 216 104" />
+            <circle id="currentPoint" class="curve__point" cx="24" cy="104" r="8" />
+            <path class="curve__pulse" d="M 24 104 C 51 40, 104 24, 120 24 C 136 24, 189 40, 216 104" filter="url(#softGlow)" />
+          </svg>
+        </button>
+        <section class="widget__body" aria-label="专注控制">
+          <div class="widget__status" id="statusLabel">准备好了</div>
+          <div class="controls">
+            <div class="duration" id="durationRow" aria-label="选择专注时长">
+              <button class="duration__chip" type="button" data-minutes="15">15</button><button class="duration__chip" type="button" data-minutes="20">20</button><button class="duration__chip" type="button" data-minutes="25">25</button><button class="duration__chip is-active" type="button" data-minutes="30">30</button><button class="duration__chip" type="button" data-minutes="45">45</button><button class="duration__chip" type="button" data-minutes="60">60</button>
+            </div>
+            <div class="actions">
+              <button class="action is-primary" id="startButton" type="button">开始</button><button class="action" id="pauseButton" type="button">暂停</button><button class="action" id="resetButton" type="button">重置</button><button class="action action--complete" id="completeCurrentButton" type="button" aria-label="确认当前任务完成"><span aria-hidden="true">✓</span> 完成</button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="view view--tasks" id="tasksView" aria-label="任务队列视图" hidden>
+        <div class="task-queue__header"><span>TASK QUEUE</span><span id="queueCount">1 / 3</span></div>
+        <div class="task-stack" id="taskStack" aria-live="polite"></div>
+        <div class="task-queue__empty" id="emptyQueue" hidden><p>写下一件要专注的事</p></div>
+        <form class="task-composer" id="taskForm"><input id="taskInput" type="text" maxlength="28" placeholder="添加下一件事" aria-label="添加任务" /><button id="addTaskButton" type="submit" aria-label="添加任务">+</button></form>
+        <section class="task-history" id="taskHistory" aria-label="任务历史">
+          <button class="task-history__toggle" id="taskHistoryToggle" type="button" aria-haspopup="dialog">
+            <span class="task-history__heading"><span aria-hidden="true">✓</span> 任务历史</span>
+            <span class="task-history__count" id="taskHistoryCount">已完成 0 个任务</span>
+            <span class="task-history__arrow" aria-hidden="true"></span>
+          </button>
+        </section>
+      </section>
+
+      <div class="completion-toast" id="completionToast" role="status" aria-live="polite" hidden><span>✓</span><div><strong>Task Completed</strong><small id="completionTime">Focus Time 00:00</small></div></div>
+      <div class="history-dialog" id="historyDialog" role="dialog" aria-modal="true" aria-label="任务历史" hidden>
+        <button class="history-dialog__backdrop" id="historyDialogBackdrop" type="button" aria-label="关闭任务历史"></button>
+        <section class="history-dialog__surface">
+          <header class="history-dialog__header"><div><span>✓</span><strong>任务历史</strong><small id="historyDialogCount">已完成 0 个任务</small></div><button class="history-dialog__close" id="historyDialogClose" type="button" aria-label="关闭任务历史">×</button></header>
+          <div class="completed-list history-dialog__list" id="completedList" aria-live="polite" tabindex="0"></div>
+        </section>
+      </div>
+      <div class="onboarding" id="onboardingLayer" hidden>
+        <div class="onboarding__spotlight" id="onboardingSpotlight" aria-hidden="true"></div>
+        <div class="onboarding__card" id="onboardingCard" role="dialog" aria-live="polite" aria-label="FocusPad 使用引导">
+          <button class="onboarding__skip" id="onboardingSkip" type="button">跳过</button>
+          <div class="onboarding__step" id="onboardingStep">1 / 8</div>
+          <strong class="onboarding__title" id="onboardingTitle">注意力曲线</strong>
+          <span class="onboarding__copy" id="onboardingCopy">记录专注节奏</span>
+          <button class="onboarding__next" id="onboardingNext" type="button">下一步</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="../pwa-register.js"></script>
+  <script src="../task-queue.js"></script>
+  <script src="../task-history.js"></script>
+  <script src="../window-size.js"></script>
+  <script src="../app.js"></script>
+</body>
+</html>
