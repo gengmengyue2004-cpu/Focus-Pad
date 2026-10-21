@@ -1,0 +1,10 @@
+html,body.desktop-app { overflow:hidden; min-height:0; background:transparent!important; }
+body.desktop-app::before,body.desktop-app::after,.desktop-app .preview-header,.desktop-app .preview-caption,.desktop-app .preview-footer { display:none; }
+.desktop-app .desktop { display:block; height:100vh!important; min-height:0!important; overflow:hidden; background:transparent; }
+.desktop-app .widget,.desktop-app .widget[data-expanded=true] { zoom:1; position:absolute; left:14px!important; top:12px!important; }
+.desktop-app .widget[data-expanded=false] { width:280px; }
+.desktop-app .widget[data-expanded=true] { width:306px; }
+.desktop-app .widget__handle { -webkit-app-region:drag; }
+.desktop-app a,.desktop-app button,.desktop-app input,.desktop-app .duration,.desktop-app .history-dialog { -webkit-app-region:no-drag; }
+.completed-item details { font-size:10px; color:var(--muted); line-height:1.8; }
+.completed-item summary { cursor:pointer; }

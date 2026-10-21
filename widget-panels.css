@@ -1,0 +1,87 @@
+/* Secondary screens live inside the floating widget and inherit its theme tokens. */
+.desktop-app .widget[data-view="editor"][data-expanded="true"] { min-height:0; height:476px; }
+.desktop-app .widget[data-view="editor"][data-expanded="true"] .widget__header,
+.desktop-app .widget[data-view="editor"][data-expanded="true"] .focus-mode-button { display:none; }
+.desktop-app .widget-editor { padding-top:2px; }
+.widget-editor__header { display:flex; align-items:center; gap:9px; margin:0 0 5px; }
+.widget-editor__header > div { display:grid; gap:1px; }
+.widget-editor__header strong { color:var(--ink); font-size:13px; line-height:1.35; }
+.widget-editor__header span { color:var(--muted); font-size:10px; }
+.widget-editor__back { display:grid; place-items:center; width:27px; height:27px; border:1.5px solid var(--track); border-radius:50%; color:var(--ink); background:var(--paper); font-size:23px; line-height:1; }
+.desktop-app .widget-editor .companion-content { padding:0!important; }
+.desktop-app .widget-editor #your-rhythm { display:block; padding:0!important; border:0; }
+.desktop-app .widget-editor .editor-layout { display:block; }
+.desktop-app .widget-editor .curve-editor { height:112px; }
+.desktop-app .widget-editor .curve-presets { margin:3px 0 6px; }
+.desktop-app .widget-editor .curve-presets button { min-height:25px; }
+.desktop-app .widget-editor .energy-fields { display:none; }
+.desktop-app .widget-editor .glow-control { margin:0; padding:5px 0; }
+.desktop-app .widget-editor .apply-row { margin-top:5px; }
+.desktop-app .widget-editor .apply-row button { height:28px; }
+.desktop-app .widget-editor .save-status { min-height:12px; }
+.desktop-app .widget-editor .compact-hint { display:none; }
+[data-theme="day"] .widget-editor .curve-presets button.active { color:#292722; background:#eeeae2; border-color:#8f8980; }
+[data-theme="night"] .widget-editor .curve-presets button.active { color:#f2f1ff; background:#35374f; border-color:#aaa5d1; }
+[data-theme="day"] .widget-editor .apply-row button { color:#24221e; background:#eeeae2; border-color:#8f8980; }
+[data-theme="day"] .widget-editor .apply-row .secondary { color:var(--muted); background:transparent; }
+[data-theme="night"] .widget-editor .apply-row button { color:#f4f3ff; background:#363850; border-color:#a9a9c6; }
+[data-theme="night"] .widget-editor .apply-row .secondary { color:#d1d2e5; background:transparent; }
+[data-theme="day"] .widget-editor .editor-grid { stroke:#87837b; }
+[data-theme="night"] .widget-editor .editor-grid { stroke:#a5a7c0; }
+[data-theme="night"] .widget-editor .editor-label { fill:#d7d8e8; }
+[data-theme="night"] .widget-editor .editor-point { fill:#e8e5ff; stroke:#494b68; }
+[data-theme="day"] .widget-editor .editor-point { fill:#fff; stroke:#746f67; }
+[data-theme="day"] .widget-editor .glow-control { border-color:#5d595130; }
+[data-theme="night"] .widget-editor .glow-control { border-color:#d3d4e52b; }
+.desktop-app .widget[data-view="editor"] .widget__toggle { display:none; }
+.desktop-app .widget[data-view="editor"] { cursor:default; }
+.desktop-app .widget[data-view="editor"] .widget__handle { pointer-events:none; }
+
+.widget-editor[data-theme="day"] { --ink:#302d29; --muted:#6c675f; --track:#aaa59e; --paper:#f6f4ee; }
+.widget-editor[data-theme="night"] { --ink:#f0effb; --muted:#cccddd; --track:#9093a7; --paper:#20222f; }
+.widget-editor[data-theme="day"] .save-status { color:#66615a; }
+.widget-editor[data-theme="night"] .save-status { color:#d2d4e4; }
+.widget-editor[data-theme="day"] .editor-path { stroke:#8b877f; }
+.widget-editor[data-theme="night"] .editor-path { stroke:#c2bfdc; }
+
+.desktop-app .onboarding { overflow:hidden; border-radius:inherit; }
+.onboarding__card { background:var(--paper); color:var(--ink); }
+.onboarding__next { color:var(--ink); }
+body[data-theme="night"] .onboarding__card { border-color:#9294af; }
+body[data-theme="night"] .onboarding__copy, body[data-theme="night"] .onboarding__skip { color:#c9cbdf; }
+body[data-theme="night"] .onboarding__next { color:#242538; }
+
+.widget-editor .sr-label { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+
+.widget-editor[data-theme="day"] { --accent:#e68a38; }
+.widget-editor[data-theme="day"] .editor-path { stroke:#e69a56; }
+.widget-editor[data-theme="day"] .editor-point { stroke:#d78d49; }
+.widget-editor[data-theme="day"] .curve-presets button.active { color:#994e17; background:#fff0dc; border-color:#e4a66e; }
+.widget-editor[data-theme="day"] .apply-row button:not(.secondary) { background:#f5b773; color:#573015; border-color:#d99350; }
+.widget-editor[data-theme="day"] input[type="range"] { accent-color:#e99a51; }
+.widget-editor[data-theme="day"] #curveArea stop { stop-color:#e99a51; }
+
+/* Embedded editor must also render in ordinary browser previews. */
+.widget-editor #your-rhythm { display:block; padding:0; border:0; }
+.widget[data-view="editor"][data-expanded="true"] { height:auto; min-height:410px; }
+.widget[data-view="editor"] .widget__header,.widget[data-view="editor"] .focus-mode-button { display:none; }
+.widget-editor .curve-editor { width:100%;height:136px; }
+.widget-editor .editor-layout { display:block; }
+.onboarding { overflow:hidden;border-radius:inherit; }
+
+/* Shared full editor composition in browser and desktop widget. */
+.widget[data-view="editor"][data-expanded="true"]{min-height:410px;height:auto;padding-top:18px;padding-bottom:26px}
+.widget[data-view="editor"] #editorView{display:block!important}
+.widget[data-view="editor"] .widget__header,.widget[data-view="editor"] .focus-mode-button{display:none!important}
+#editorView #your-rhythm{display:block!important}
+.widget-editor__header{min-height:43px;padding:0 35px 0 0;margin:0 0 12px;gap:10px}
+.widget-editor__header strong{font-size:13px}.widget-editor__header span{font-size:10px}
+.widget-editor .compact-hint{display:block!important;font-size:10px;margin:8px 0 10px;color:var(--muted)}
+.widget-editor .curve-editor{width:100%;height:136px!important;margin:0 0 7px}
+.widget-editor .curve-presets{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:5px 0 10px}
+.widget-editor .curve-presets button{font-family:inherit;font-weight:750;font-size:11px;line-height:1.3;min-height:27px;padding:4px 6px}
+.widget-editor .glow-control{margin:0;padding:12px 0 9px;grid-template-columns:68px minmax(0,1fr) 22px}
+.widget-editor .apply-row{margin-top:12px;gap:6px}.widget-editor .apply-row button{height:30px}
+.widget-editor .save-status{font-size:9px;padding-left:21px;line-height:1.4;min-height:15px}
+.desktop:has(.widget[data-view="editor"]){height:590px;min-height:590px}
+.desktop-app .widget[data-view="editor"][data-expanded="true"]{height:476px;min-height:0;padding-top:18px}

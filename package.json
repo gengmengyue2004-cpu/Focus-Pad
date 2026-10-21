@@ -1,13 +1,59 @@
 {
-  "name": "focus-pad",
-  "version": "0.1.0",
-  "description": "Floating focus companion desktop widget",
+  "name": "focus-pad-v2",
+  "version": "2.0.9",
+  "description": "Focus Pad floating sun and moon focus widget",
+  "author": "Focus Pad",
   "main": "main.js",
-  "private": false,
   "scripts": {
     "start": "electron ."
   },
-  "devDependencies": {
-    "electron": "^44.2.0"
+  "build": {
+    "appId": "com.focuspad.desktop.v2",
+    "productName": "Focus Pad v2",
+    "electronVersion": "45.0.0",
+    "asar": true,
+    "directories": {
+      "output": "F:/codex/generated-files/2026-10-21/new-chat/outputs/windows",
+      "app": "."
+    },
+    "files": [
+      "*.js",
+      "*.css",
+      "*.html",
+      "app/index.html",
+      "assets/**",
+      "!pwa-register.js",
+      "guide-demo/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "signAndEditExecutable": true,
+      "artifactName": "Focus-Pad-v2-Setup-${version}-Windows-x64.exe",
+      "signExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false,
+      "shortcutName": "Focus Pad v2",
+      "installerLanguages": [
+        "zh_CN",
+        "en_US"
+      ],
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico"
+    }
   }
 }

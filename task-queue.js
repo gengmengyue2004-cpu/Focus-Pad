@@ -32,6 +32,7 @@
       title: task.title,
       completedAt,
       focusDurationMs: taskTotalMs(task),
+      sessions: (task.sessions || []).map(session => ({ ...session })),
     };
   }
 
@@ -47,6 +48,7 @@
       title: typeof item.title === 'string' ? item.title : '',
       completedAt: item.completedAt || null,
       focusDurationMs: Number(item.focusDurationMs || 0),
+      sessions: Array.isArray(item.sessions) ? item.sessions : [],
     }));
 
     const tasks = (Array.isArray(saved.tasks) ? saved.tasks : []).slice(0, MAX_TASKS).map((rawTask) => {

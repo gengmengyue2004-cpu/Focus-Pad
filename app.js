@@ -1,11 +1,13 @@
 const widget = document.getElementById('widget');
 const dragHandle = document.getElementById('dragHandle');
 const expandButton = document.getElementById('expandButton');
-const modeIndicator = document.getElementById('modeIndicator');
+const modeIndicator = document.getElementById('focusModeButton');
 const focusViewButton = document.getElementById('focusViewButton');
 const tasksViewButton = document.getElementById('tasksViewButton');
 const focusView = document.getElementById('focusView');
 const tasksView = document.getElementById('tasksView');
+const editorView = document.getElementById('editorView');
+const editorBack = document.getElementById('editorBack');
 const curveButton = document.getElementById('curveButton');
 const timeLabel = document.getElementById('timeLabel');
 const statusLabel = document.getElementById('statusLabel');
@@ -45,12 +47,16 @@ const trackPath = document.getElementById('trackPath');
 const fillPath = document.getElementById('fillPath');
 const currentPoint = document.getElementById('currentPoint');
 const durationChips = [...document.querySelectorAll('.duration__chip')];
-const desktopBridge = window.focusPetDesktop || null;
+const customDurationButton = document.getElementById('customDurationButton');
+const customDurationPanel = document.getElementById('customDurationPanel');
+const customDurationInput = document.getElementById('customDurationInput');
+const customDurationConfirm = document.getElementById('customDurationConfirm');
+const desktopBridge = window.focusPetDesktop?.isWidget ? window.focusPetDesktop : null;
 
 const DEFAULT_MINUTES = 30;
 const MINUTE_MS = 60_000;
 const DRAG_THRESHOLD = 4;
-const STORAGE_KEY = 'focus-pet-task-queue-v1';
+const STORAGE_KEY = desktopBridge ? 'focus-pet-task-queue-v1' : 'focus-pad-night-preview-v1';
 const taskQueue = window.FocusPadTaskQueue;
 const { MAX_TASKS, createTask, taskTotalMs, normalizeTaskState, completeTaskInSlot } = taskQueue;
 const { groupHistoryRecords } = window.FocusPadTaskHistory;
@@ -81,6 +87,9 @@ const state = {
   remainingMs: (saved.selectedMinutes || DEFAULT_MINUTES) * MINUTE_MS,
   sessionTaskId: null,
   sessionCommitted: false,
+  sessionRecordId: null,
+  sessionSavedMs: 0,
+  sessionStartedAt: null,
   frame: 0,
   drag: null,
   trackLength: 1,
@@ -89,7 +98,7 @@ const state = {
   history: saved.history,
   historyDialogOpen: false,
   freeSessions: Array.isArray(saved.freeSessions) ? saved.freeSessions : [],
-  onboardingCompleted: saved.onboardingCompleted === true && !shouldShowOnboarding,
+  onboardingCompleted: true,
   onboardingStepIndex: 0,
   onboardingPositionTimer: 0,
   toastTimer: 0,
@@ -97,15 +106,15 @@ const state = {
 
 state.compactMode = Boolean(desktopBridge) || window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: state.tasks, history: state.history, selectedMinutes: state.selectedMinutes, focusMode: state.focusMode, freeSessions: state.freeSessions, onboardingCompleted: state.onboardingCompleted })); }
+function persist() { if (!localStorage.getItem(STORAGE_KEY + '-before-timer-fix')) { const original = localStorage.getItem(STORAGE_KEY); if (original) localStorage.setItem(STORAGE_KEY + '-before-timer-fix', original); } localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: state.tasks, history: state.history, selectedMinutes: state.selectedMinutes, focusMode: state.focusMode, freeSessions: state.freeSessions, onboardingCompleted: state.onboardingCompleted })); }
 function formatTime(ms) { const safe = Math.max(0, Math.floor(ms / 1000)); return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`; }
 function getActiveTask() { return state.tasks.find((task) => task.title.trim()) || null; }
 function getTaskById(id) { return state.tasks.find((task) => task.id === id) || null; }
-function liveElapsedMs(now = performance.now()) { return state.mode === 'running' ? state.elapsedBeforePause + now - state.runningSince : state.elapsedBeforePause; }
+function liveElapsedMs(now = performance.now()) { const elapsed = state.mode === 'running' ? state.elapsedBeforePause + Math.max(0, now - state.runningSince) : state.elapsedBeforePause; return Math.max(0, Math.min(durationMs(), elapsed)); }
 function liveSessionMs(now = performance.now()) { return Math.max(0, liveElapsedMs(now) - state.sessionStartedElapsed); }
 function taskDisplayMs(task) {
   const belongsToTask = state.sessionTaskId === task.id && !state.sessionCommitted;
-  return taskTotalMs(task) + (belongsToTask && (state.mode === 'running' || state.mode === 'paused') ? liveSessionMs() : 0);
+  return taskTotalMs(task) + (belongsToTask && (state.mode === 'running' || state.mode === 'paused') ? Math.max(0, liveSessionMs() - state.sessionSavedMs) : 0);
 }
 function durationMs() { return state.selectedMinutes * MINUTE_MS; }
 
@@ -113,19 +122,23 @@ function syncWindowSize() {
   if (!desktopBridge?.resizeWindow) return;
   const size = !state.expanded
     ? WIDGET_SIZES.compact
-    : state.view === 'tasks'
+    : state.view === 'editor'
+      ? WIDGET_SIZES.editor
+      : state.view === 'tasks'
       ? WIDGET_SIZES.tasks
       : WIDGET_SIZES.focus;
   desktopBridge.resizeWindow(size.width, size.height);
 }
 
 function setExpanded(expanded) {
+  if (!expanded) customDurationPanel.hidden = true;
   const wasExpanded = state.expanded;
-  if (!expanded && state.view === 'tasks') {
+  if (!expanded && state.view !== 'focus') {
     state.view = 'focus';
     widget.dataset.view = 'focus';
     focusView.hidden = false;
     tasksView.hidden = true;
+    editorView.hidden = true;
     focusViewButton.classList.add('is-active');
     tasksViewButton.classList.remove('is-active');
     focusViewButton.setAttribute('aria-selected', 'true');
@@ -142,13 +155,17 @@ function setView(view) {
   state.view = view;
   widget.dataset.view = view;
   const isFocus = view === 'focus';
+  const isTasks = view === 'tasks';
   focusView.hidden = !isFocus;
-  tasksView.hidden = isFocus;
+  tasksView.hidden = !isTasks;
+  editorView.hidden = view !== 'editor';
   focusViewButton.classList.toggle('is-active', isFocus);
-  tasksViewButton.classList.toggle('is-active', !isFocus);
+  tasksViewButton.classList.toggle('is-active', isTasks);
   focusViewButton.setAttribute('aria-selected', String(isFocus));
-  tasksViewButton.setAttribute('aria-selected', String(!isFocus));
+  tasksViewButton.setAttribute('aria-selected', String(isTasks));
   if (!state.expanded) setExpanded(true);
+  expandButton.setAttribute('aria-expanded', String(state.expanded));
+  widget.dataset.expanded = String(state.expanded);
   renderAll();
   syncWindowSize();
 }
@@ -164,6 +181,23 @@ function setMode(mode, customStatus = '') {
   if (mode === 'complete') statusLabel.textContent = '本次专注结束 · 等你确认任务';
 }
 
+function saveDurationSlots() { try { localStorage.setItem('focus-pad-duration-slots', JSON.stringify(durationChips.filter(c => c.dataset.minutes && c.isConnected).map(c => Number(c.dataset.minutes)))); } catch {} }
+function removeDuration(chip) {
+  if (state.mode === 'running') return;
+  const selected = Number(chip.dataset.minutes) === state.selectedMinutes;
+  durationChips.splice(durationChips.indexOf(chip), 1); chip.remove(); saveDurationSlots();
+  if (selected) setSelectedDuration(Number(durationChips.find(c => c.dataset.minutes)?.dataset.minutes || 30));
+}
+function bindDurationDeletion(chip) {
+  if (!chip.dataset.minutes) return;
+  chip.title = '长按或右键显示删除，再点击删除'; let hold; let origin;
+  const reveal = () => { if (state.mode === 'running') return; durationChips.forEach(c => { c.classList.remove('is-deleting'); c.removeAttribute('aria-label'); }); chip.classList.add('is-deleting'); chip.setAttribute('aria-label', '删除 ' + chip.dataset.minutes + ' 分钟'); };
+  chip.addEventListener('contextmenu', e => { e.preventDefault(); reveal(); });
+  chip.addEventListener('pointerdown', e => { if (e.button !== 0) return; delete chip.dataset.suppressClick; origin = [e.clientX, e.clientY]; hold = setTimeout(() => { reveal(); chip.dataset.suppressClick = '1'; }, 550); });
+  chip.addEventListener('pointermove', e => { if (origin && Math.hypot(e.clientX-origin[0], e.clientY-origin[1]) > 8) clearTimeout(hold); });
+  ['pointerup','pointercancel','pointerleave'].forEach(type => chip.addEventListener(type, () => clearTimeout(hold)));
+  chip.addEventListener('keydown', e => { if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removeDuration(chip); } });
+}
 function updateDurationChips() { durationChips.forEach((chip) => chip.classList.toggle('is-active', Number(chip.dataset.minutes) === state.selectedMinutes)); }
 function updateControls() {
   const hasTask = Boolean(getActiveTask());
@@ -207,6 +241,7 @@ function setPosition(x, y) {
 
 function renderCurve(progress) {
   const clamped = Math.max(0, Math.min(1, progress));
+  fillPath.style.opacity = clamped > 0 ? '1' : '0';
   fillPath.style.strokeDasharray = `${state.trackLength}`;
   fillPath.style.strokeDashoffset = `${state.trackLength * (1 - clamped)}`;
   const point = trackPath.getPointAtLength(state.trackLength * clamped);
@@ -214,21 +249,28 @@ function renderCurve(progress) {
   currentPoint.setAttribute('cy', point.y);
 }
 
-function commitFocusSession() {
-  const sessionDuration = liveSessionMs();
-  if (state.sessionCommitted || sessionDuration < 1000) return;
-  if (state.sessionFocusMode === 'free') {
-    state.freeSessions.push({ durationMs: Math.round(sessionDuration), finishedAt: new Date().toISOString() });
-  } else {
-    const task = getTaskById(state.sessionTaskId);
-    if (!task) return;
-    task.sessions.push({ durationMs: Math.round(sessionDuration), finishedAt: new Date().toISOString() });
-  }
-  state.sessionCommitted = true;
+function saveFocusCheckpoint(final = false) {
+  if (state.sessionCommitted || !state.sessionFocusMode) return;
+  const sessionDuration = Math.round(liveSessionMs());
+  if (sessionDuration < 1000) return;
+  const sessions = state.sessionFocusMode === 'free' ? state.freeSessions : getTaskById(state.sessionTaskId)?.sessions;
+  if (!sessions) return;
+  if (!state.sessionRecordId) state.sessionRecordId = 'session-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+  const existing = sessions.find(item => item.id === state.sessionRecordId);
+  const record = { id: state.sessionRecordId, startedAt: state.sessionStartedAt, durationMs: sessionDuration, finishedAt: new Date().toISOString(), status: final ? 'saved' : 'checkpoint' };
+  if (existing) Object.assign(existing, record); else sessions.push(record);
+  state.sessionSavedMs = sessionDuration;
   persist();
+}
+function commitFocusSession() {
+  saveFocusCheckpoint(true);
+  state.sessionCommitted = true;
 }
 
 function clearSession() {
+  state.sessionRecordId = null;
+  state.sessionSavedMs = 0;
+  state.sessionStartedAt = null;
   state.runningSince = 0;
   state.elapsedBeforePause = 0;
   state.sessionStartedElapsed = 0;
@@ -260,6 +302,7 @@ function startSession() {
     state.sessionTaskId = state.focusMode === 'task' ? active.id : null;
     state.sessionFocusMode = state.focusMode;
   }
+  if (!state.sessionStartedAt) state.sessionStartedAt = new Date().toISOString();
   state.mode = 'running';
   state.runningSince = performance.now();
   if (state.compactMode && !state.expanded) {
@@ -284,6 +327,7 @@ function pauseSession() {
   state.remainingMs = Math.max(0, durationMs() - state.elapsedBeforePause);
   timeLabel.textContent = formatTime(state.remainingMs);
   setMode('paused');
+  saveFocusCheckpoint();
   syncButtons();
   updateControls();
   renderCurve(state.elapsedBeforePause / durationMs());
@@ -309,6 +353,7 @@ function toggleFocusMode() {
     cancelAnimationFrame(state.frame);
     state.elapsedBeforePause = liveElapsedMs();
     state.remainingMs = Math.max(0, durationMs() - state.elapsedBeforePause);
+    state.mode = 'paused';
     commitFocusSession();
   } else if (state.mode === 'paused') {
     commitFocusSession();
@@ -317,6 +362,9 @@ function toggleFocusMode() {
   widget.dataset.focusMode = nextMode;
   state.sessionTaskId = nextMode === 'task' ? getActiveTask()?.id || null : null;
   state.sessionFocusMode = nextMode;
+  state.sessionRecordId = null;
+  state.sessionSavedMs = 0;
+  state.sessionStartedAt = new Date().toISOString();
   state.sessionStartedElapsed = state.elapsedBeforePause;
   state.sessionCommitted = false;
   modeIndicator.setAttribute('aria-label', nextMode === 'task' ? '当前为任务专注模式，点击切换自由专注' : '当前为自由专注模式，点击切换任务专注');
@@ -335,6 +383,7 @@ function completeSession() {
   state.elapsedBeforePause = durationMs();
   state.remainingMs = 0;
   state.runningSince = 0;
+  state.mode = 'complete';
   commitFocusSession();
   timeLabel.textContent = '00:00';
   setMode('complete');
@@ -488,6 +537,19 @@ function renderCompletedList() {
       const meta = document.createElement('span');
       meta.textContent = `${record.timeLabel} · 专注 ${formatTime(record.focusDurationMs)}`;
       item.append(title, meta);
+      if (record.sessions?.length) {
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = record.sessions.length + ' 段专注 · 查看明细';
+        details.append(summary);
+        record.sessions.forEach(session => {
+          const line = document.createElement('div');
+          const date = new Date(session.finishedAt);
+          line.textContent = (Number.isFinite(date.getTime()) ? date.toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '过往记录') + ' · ' + formatTime(session.durationMs);
+          details.append(line);
+        });
+        item.append(details);
+      }
       completedList.append(item);
     });
   });
@@ -529,9 +591,9 @@ function renderAll() {
 }
 
 const onboardingSteps = [
-  { title: '注意力曲线', copy: '记录专注节奏', view: 'focus', target: () => curveButton },
+  { title: '点击轨道，自定义节奏', copy: '在组件内拖动圆点调整轨迹', view: 'focus', target: () => curveButton },
   { title: '选择专注时长', copy: '', view: 'focus', target: () => durationRow },
-  { title: '一点，切换模式', copy: '自由专注 / 任务专注', view: 'focus', target: () => modeIndicator },
+  { title: '一点，切换日夜', copy: '点击右上角圆点切换日间与夜间', view: 'focus', target: () => document.getElementById('modeIndicator') },
   { title: '添加最多 3 个任务', copy: '', view: 'tasks', target: () => tasksViewButton },
   { title: '最大的，是当前任务', copy: '', view: 'tasks', target: () => taskStack.querySelector('.task-card[data-slot="0"] .task-card__paper') || taskStack },
   { title: '滑动，切换任务', copy: '', view: 'tasks', target: () => taskStack },
@@ -546,8 +608,12 @@ function onboardingTargetFor(step) {
 }
 
 function positionOnboarding(target) {
-  const targetRect = target.getBoundingClientRect();
-  const layerRect = onboardingLayer.getBoundingClientRect();
+  const rawTarget = target.getBoundingClientRect();
+  const rawLayer = onboardingLayer.getBoundingClientRect();
+  const sx = rawLayer.width / (onboardingLayer.offsetWidth || rawLayer.width) || 1;
+  const sy = rawLayer.height / (onboardingLayer.offsetHeight || rawLayer.height) || 1;
+  const targetRect = {left:rawTarget.left/sx,top:rawTarget.top/sy,right:rawTarget.right/sx,bottom:rawTarget.bottom/sy,width:rawTarget.width/sx,height:rawTarget.height/sy};
+  const layerRect = {left:rawLayer.left/sx,top:rawLayer.top/sy,width:rawLayer.width/sx,height:rawLayer.height/sy};
   const pad = target === widget ? 0 : 6;
   onboardingSpotlight.style.left = `${targetRect.left - layerRect.left - pad}px`;
   onboardingSpotlight.style.top = `${targetRect.top - layerRect.top - pad}px`;
@@ -561,7 +627,7 @@ function positionOnboarding(target) {
   onboardingCard.style.width = `${cardWidth}px`;
 
   // Measure after content and width are applied so short and long steps share the same bounds logic.
-  const cardHeight = onboardingCard.getBoundingClientRect().height || 96;
+  const cardHeight = onboardingCard.offsetHeight || 96;
   let left = targetRect.left - layerRect.left + Math.min(20, Math.max(0, (targetRect.width - cardWidth) / 2));
   left = Math.min(Math.max(edge, left), Math.max(edge, layerRect.width - cardWidth - edge));
 
@@ -597,6 +663,7 @@ function repositionOnboarding() {
 
 function closeOnboarding() {
   state.onboardingCompleted = true;
+  localStorage.setItem('focus-pad-widget-guide-208','done');
   persist();
   onboardingLayer.classList.remove('is-visible');
   setTimeout(() => { onboardingLayer.hidden = true; }, 220);
@@ -615,7 +682,7 @@ function showOnboardingStep(index) {
     setView('focus');
     onboardingLayer.classList.add('is-final');
   } else {
-    onboardingStep.textContent = `${index + 1} / 8`;
+    onboardingStep.textContent = `${index + 1} / ${onboardingSteps.length - 1}`;
     onboardingTitle.textContent = step.title;
     onboardingCopy.textContent = step.copy;
     onboardingNext.textContent = index === onboardingSteps.length - 2 ? '开始使用' : '下一步';
@@ -642,7 +709,7 @@ function startOnboardingIfNeeded() {
 function toggleExpanded() { setExpanded(!state.expanded); renderAll(); }
 
 function tryDragStart(event) {
-  if (event.button !== 0 || event.target.closest('button, input')) return;
+  if (event.button !== 0 || event.target.closest('button, input, a')) return;
   const rect = widget.getBoundingClientRect();
   state.drag = { pointerId:event.pointerId, startX:event.clientX, startY:event.clientY, offsetX:event.clientX - rect.left, offsetY:event.clientY - rect.top, active:false };
   dragHandle.setPointerCapture(event.pointerId);
@@ -674,7 +741,9 @@ function attachEvents() {
   modeIndicator.addEventListener('click', (event) => { event.stopPropagation(); toggleFocusMode(); });
   focusViewButton.addEventListener('click', () => setView('focus'));
   tasksViewButton.addEventListener('click', () => setView('tasks'));
-  curveButton.addEventListener('click', () => toggleExpanded());
+  document.querySelector('[data-open-custom]')?.addEventListener('click',()=>setView('editor'));
+  curveButton.addEventListener('click', () => { if (state.expanded && state.view === 'editor') setView('focus'); else setView('editor'); });
+  editorBack.addEventListener('click', () => setView('focus'));
   currentTaskButton.addEventListener('click', () => setView('tasks'));
   timeLabel.addEventListener('click', () => { setExpanded(true); setView('focus'); });
   timeLabel.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setExpanded(true); setView('focus'); } });
@@ -685,7 +754,31 @@ function attachEvents() {
   taskHistoryToggle.addEventListener('click', openTaskHistory);
   historyDialogBackdrop.addEventListener('click', closeTaskHistory);
   historyDialogClose.addEventListener('click', closeTaskHistory);
-  durationChips.forEach((chip) => chip.addEventListener('click', () => setSelectedDuration(Number(chip.dataset.minutes))));
+  durationChips.forEach((chip) => chip.addEventListener('click', (event) => { if (chip.dataset.suppressClick === '1') { delete chip.dataset.suppressClick; return; } if (chip.classList.contains('is-deleting')) { event.stopPropagation(); removeDuration(chip); return; } if (chip === customDurationButton) { if (state.mode !== 'running') { customDurationPanel.hidden = false; customDurationInput.focus(); } return; } setSelectedDuration(Number(chip.dataset.minutes)); }));
+  customDurationConfirm.addEventListener('click', (event) => {
+    event.stopPropagation(); const value = Number(customDurationInput.value);
+    if (!customDurationInput.value.trim() || !Number.isInteger(value) || value < 1 || value > 240) { customDurationInput.setCustomValidity('请输入 1–240 的整数分钟'); customDurationInput.reportValidity(); return; }
+    customDurationInput.setCustomValidity('');
+    if (!durationChips.some(chip => Number(chip.dataset.minutes) === value)) {
+      const chip = document.createElement('button'); chip.className = 'duration__chip'; chip.type = 'button'; chip.dataset.minutes = value; chip.textContent = value;
+      chip.addEventListener('click', (event) => { if (chip.dataset.suppressClick === '1') { delete chip.dataset.suppressClick; return; } if (chip.classList.contains('is-deleting')) { event.stopPropagation(); removeDuration(chip); return; } setSelectedDuration(Number(chip.dataset.minutes)); });
+      const slots = durationChips.filter(c => c.dataset.minutes && c.isConnected); if (slots.length >= 5) { const last = slots[slots.length - 1]; durationChips.splice(durationChips.indexOf(last),1); last.remove(); }
+      durationRow.insertBefore(chip, customDurationButton); durationChips.push(chip); bindDurationDeletion(chip); saveDurationSlots();
+    }
+    setSelectedDuration(value); customDurationInput.value = ''; customDurationPanel.hidden = true;
+  });
+  try {
+    const stored = JSON.parse(localStorage.getItem('focus-pad-duration-slots'));
+    if (Array.isArray(stored)) {
+      const valid = [...new Set(stored.filter(n => Number.isInteger(n) && n >= 1 && n <= 240))].slice(0,5);
+      const slots = durationChips.filter(c => c.dataset.minutes);
+      slots.forEach((c,i) => { if (i < valid.length) { c.dataset.minutes=valid[i]; c.textContent=valid[i]; } else { durationChips.splice(durationChips.indexOf(c),1); c.remove(); } });
+    }
+  } catch {}
+  durationChips.forEach(bindDurationDeletion);
+  document.addEventListener('click', event => { if (!event.target.closest('.is-deleting')) durationChips.forEach(c => { c.classList.remove('is-deleting'); if(c.dataset.minutes)c.removeAttribute('aria-label'); }); });
+  customDurationInput.addEventListener('input', () => customDurationInput.setCustomValidity(''));
+  customDurationInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') customDurationConfirm.click(); if (event.key === 'Escape') customDurationPanel.hidden = true; });
   taskForm.addEventListener('submit', (event) => { event.preventDefault(); addTask(taskInput.value); });
   taskStack.addEventListener('click', (event) => {
     const card = event.target.closest('.task-card');
@@ -716,6 +809,8 @@ function attachEvents() {
 }
 
 function bootstrap() {
+  customDurationPanel.hidden = true;
+  customDurationInput.value = '';
   state.trackLength = trackPath.getTotalLength();
   fillPath.style.strokeDasharray = `${state.trackLength}`;
   currentPoint.style.opacity = '1';
@@ -738,7 +833,18 @@ function bootstrap() {
   renderCurve(0);
   renderAll();
   attachEvents();
-  if (!state.compactMode) requestAnimationFrame(startOnboardingIfNeeded);
+  new ResizeObserver(()=>{if(!onboardingLayer.hidden)repositionOnboarding();}).observe(widget);
+  window.addEventListener('resize',()=>{if(!onboardingLayer.hidden)repositionOnboarding();});
+  state.onboardingCompleted = localStorage.getItem('focus-pad-widget-guide-208') === 'done';
+  if (shouldShowOnboarding) state.onboardingCompleted = false;
+  if (!state.onboardingCompleted) requestAnimationFrame(startOnboardingIfNeeded);
 }
 
 bootstrap();
+
+// Save partial progress without appending the same session repeatedly.
+setInterval(() => { if (state.mode === 'running') saveFocusCheckpoint(); }, 5000);
+window.addEventListener('pagehide', () => { if (state.mode === 'running') pauseSession(); saveFocusCheckpoint(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveFocusCheckpoint(); });
+
+window.FocusPadShowGuide=()=>{state.onboardingCompleted=false;startOnboardingIfNeeded();};

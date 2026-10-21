@@ -4,9 +4,10 @@
   if (root) root.FocusPadWindowSize = api;
 })(typeof window !== 'undefined' ? window : globalThis, () => {
   const WIDGET_SIZES = {
-    compact: { width: 320, height: 224 },
-    focus: { width: 336, height: 374 },
-    tasks: { width: 336, height: 462 },
+    compact: { width: 320, height: 250 },
+    focus: { width: 336, height: 430 },
+    tasks: { width: 336, height: 500 },
+    editor: { width: 336, height: 500 },
     historyDialog: { width: 336, height: 462 },
   };
 

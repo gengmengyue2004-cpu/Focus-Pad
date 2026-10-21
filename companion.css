@@ -1,0 +1,55 @@
+.moon-entry { position:absolute; z-index:5; left:14px; bottom:16px; width:24px; height:24px; display:grid; place-items:center; color:var(--muted); border-radius:50%; text-decoration:none; border:1px solid #9699b647; background:var(--paper); }
+.moon-entry svg { width:13px; height:13px; }
+.moon-entry:hover { color:var(--ink); border-color:currentColor; }
+.companion-content { max-width:1050px; margin:0 auto; padding:20px 36px 50px; }
+.companion-nav { text-align:center; margin:-8px 0 34px; font-size:12px; }
+.companion-nav a { color:#b2b2cf; text-decoration:none; border-bottom:1px solid #b2b2cf55; padding-bottom:5px; }
+.companion-content section { border-top:1px solid #9c9eb823; padding:42px 0; }
+#your-rhythm { display:none; }
+[data-panel=custom] #your-rhythm { display:block; border-top:0; padding-top:18px; }
+[data-panel=custom] .preview-caption,[data-panel=custom] .desktop,[data-panel=custom] .preview-footer,[data-panel=custom] .moon-story,[data-panel=custom] .companion-nav,[data-panel=custom] .companion-end { display:none; }
+[data-panel=custom] .companion-content { padding-top:14px; }
+.theme-picker { flex-shrink:0; }
+.companion-content h2 { font-size:23px; font-weight:500; margin:0 0 14px; letter-spacing:1px; }
+.companion-content p { font-size:13px; line-height:1.9; color:var(--muted); margin:0 0 15px; }
+.moon-story { display:grid; grid-template-columns:.8fr 1.2fr; gap:64px; align-items:center; }
+.lunar-stage { position:relative; display:grid; place-items:center; min-height:260px; background:radial-gradient(ellipse,#7767df1c,transparent 65%); }
+.lunar-stage svg { width:100%; max-width:310px; overflow:visible; }
+.story-heading { display:flex; justify-content:space-between; align-items:center; gap:20px; }
+.story-heading small { color:var(--muted); font-size:11px; white-space:nowrap; }
+.moon-fact { font-size:15px!important; color:var(--ink)!important; }
+.phase-learn { width:100%; accent-color:#c7bce9; margin:12px 0; }
+.phase-ends { display:flex; justify-content:space-between; color:var(--muted); font-size:10px; }
+.science-source { font-size:11px!important; margin-top:20px!important; }
+.science-source a { color:inherit; text-underline-offset:3px; }
+.orbit-legend { fill:#9fa0bc; font:11px system-ui,sans-serif; }
+.editor-header { display:flex; justify-content:space-between; align-items:center; gap:30px; }
+.editor-header a { color:var(--muted); font-size:12px; text-decoration:none; white-space:nowrap; }
+.editor-layout { display:grid; grid-template-columns:1.4fr 1fr; gap:48px; align-items:start; margin-top:22px; }
+.curve-editor { width:100%; overflow:visible; touch-action:none; }
+.editor-grid { stroke:#9294af20; stroke-width:1; }
+.editor-path { fill:none; stroke:#c5b9f0; stroke-width:5; stroke-linecap:round; stroke-linejoin:round; }
+.editor-point { fill:#ede9ff; stroke:#8e7cc8; stroke-width:2; cursor:ns-resize; }
+.editor-label { fill:#9294aa; font:10px system-ui,sans-serif; }
+.curve-presets { display:flex; flex-wrap:wrap; gap:7px; margin:15px 0; }
+.curve-presets button { color:var(--muted); padding:8px 12px; border:1px solid #9294af35; border-radius:20px; font-size:12px; }
+.curve-presets button.active { color:var(--ink); background:#a7a0dc17; border-color:#b5abd372; }
+.energy-fields { display:grid; gap:11px; padding-top:6px; }
+.energy-field { display:grid; grid-template-columns:70px 1fr 30px; gap:10px; align-items:center; color:var(--muted); font-size:12px; }
+.energy-field input { width:100%; accent-color:#c7bce9; cursor:pointer; }
+.energy-field output { text-align:right; font-variant-numeric:tabular-nums; }
+.glow-control { padding-top:20px; margin-top:20px; border-top:1px solid #9294af26; }
+.apply-row { display:flex; flex-wrap:wrap; align-items:center; gap:16px; margin-top:28px; }
+.apply-row button { padding:12px 22px; border-radius:23px; background:#d8d1ef; color:#29243b; font-size:13px; font-weight:650; }
+.apply-row .secondary { padding:10px 14px; background:transparent; color:var(--muted); font-size:12px; }
+.save-status { color:#b4adb9; font-size:12px; }
+.editor-note { font-size:11px!important; margin-top:18px!important; }
+.companion-end { text-align:center; font-size:12px; color:var(--muted); padding:10px 0 22px; letter-spacing:1px; }
+.widget .moon-marker { --moon-strength:.7; }
+.widget .moon-lit { filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 calc(2px + var(--moon-strength)*4px) #edf0ff) drop-shadow(0 0 calc(4px + var(--moon-strength)*12px) #a99bffad); }
+.curve__track,.curve__fill { stroke-width:16!important; stroke-linecap:round; stroke-linejoin:round; }
+body[data-embedded=true] .preview-header,body[data-embedded=true] .preview-caption,body[data-embedded=true] .preview-footer { display:none; }
+[data-theme=day] .editor-path { stroke:#da885b; }
+[data-theme=day] .editor-point { fill:#fff6ed; stroke:#b5764c; }
+[data-theme=day] .companion-nav a { color:#79736c; }
+@media(max-width:700px) { .companion-content { padding:0 24px 35px; } .moon-story,.editor-layout { grid-template-columns:1fr; gap:22px; } .moon-story { gap:4px; } .lunar-stage { min-height:220px; } .lunar-stage svg { max-width:260px; } .companion-content h2 { font-size:21px; } .story-heading { flex-wrap:wrap; gap:0; } .editor-header { align-items:start; } }
